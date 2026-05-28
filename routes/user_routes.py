@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.model import User
 from schemas.user_schema import UserCreate,UserLogin
-from auth import create_access_token,verify_password,hash_password
+from auth import create_access_token, employee_only, manager_only,verify_password,hash_password
 from auth import verify_token
 from auth import get_current_user
 from auth import admin_only
@@ -87,8 +87,29 @@ def admin_dashboard(current_user:User=Depends(admin_only)):
         }
     }
 
+@router.get("/manager-dashboard")
+def manager_dashboard(current_user:User=Depends(manager_only)):
+    return {
+        "message":"Welcome to the Manager Dashboard",
+        "user":{
+            "id":current_user.id,
+            "username":current_user.username,
+            "email":current_user.email,
+            "role":current_user.role
+        }
+    }
 
-
+@router.get("/employee-dashboard")
+def employee_dashboard(current_user:User=Depends(employee_only)):
+    return {
+        "message":"Welcome to the Employee Dashboard",
+        "user":{
+            "id":current_user.id,
+            "username":current_user.username,
+            "email":current_user.email,
+            "role":current_user.role
+        }
+    }
 @router.patch("/profile")
 def update_profile(
     updated_data: UserUpdate,
