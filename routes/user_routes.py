@@ -110,6 +110,14 @@ def employee_dashboard(current_user:User=Depends(employee_only)):
             "role":current_user.role
         }
     }
+
+@router.get("/my-employees")
+def myemployees(db:Session=Depends(get_db),current_user:User=Depends(manager_only)):
+    
+    employees = db.query(User).filter(
+        User.manager_id == current_user.id
+    ).all()
+    return employees
 @router.patch("/profile")
 def update_profile(
     updated_data: UserUpdate,

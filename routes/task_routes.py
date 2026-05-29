@@ -4,7 +4,7 @@ from database import get_db
 from models.model import Task,User
 from schemas.task_schema import TaskCreate,TaskOut, TaskUpdate
 from auth import admin_only, get_current_user,manager_only,employee_only
-
+from utils.workflow import is_valid_transition
 router = APIRouter()
 
 @router.post("/tasks",response_model=TaskOut)
@@ -52,7 +52,7 @@ def get_tasks(db: Session = Depends(get_db),current_user: User = Depends(get_cur
 @router.get("/tasks/{task_id}")
 def get_task(task_id: int,db: Session = Depends(get_db),current_user: User = Depends(get_current_user)):
     task = db.query(Task).filter(
-        Task.id == task.id
+        Task.id == task_id
     ).first()
     if not task:
         raise HTTPException(
@@ -91,7 +91,13 @@ def update_task(
 
         # employee can update ONLY status
         if updated_data.status:
-            task.status = updated_data.status
+            if not is_valid_transition(task.status,updated_data.status):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid workflow transition from {task.status} to {updated_data.status}"
+                )
+            task.status=updated_data.status
+                
 
         else:
             raise HTTPException(
@@ -127,4 +133,25 @@ def update_task(
     return {
         "message": "Task updated successfully",
         "task": task
+    }
+
+@router.delete("/tasks/{task_id}")
+def delete_task(task_id:int,db:Session = Depends(get_db),current_user:User = Depends(get_current_user)):
+    task = db.query(Task).filter(
+        Task.id == task_id
+    ).first()
+    if not task:
+        raise HTTPException(
+        status_code=404,
+        detail="Delete Task not found"
+    )
+    if current_user.role == "employee":
+        raise HTTPException(
+            status_code=403,
+            detail="Employees cannot delete tasks"
+        )
+    db.delete(task)
+    db.commit()
+    return{
+        "message":"Task deleted successfully"
     }
