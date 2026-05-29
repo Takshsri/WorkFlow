@@ -12,6 +12,11 @@ class User(Base):
     password = Column(String)
     is_active = Column(Boolean,default=True)
     is_verified = Column(Boolean,default=False)
+    manager_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True
+    )
 
 
 class Task(Base):
